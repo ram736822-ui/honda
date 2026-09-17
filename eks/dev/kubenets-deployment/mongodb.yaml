@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongoinst
+  namespace: devproject
+spec:
+  serviceName: mongosvc
+  replicas: 1
+  selector:
+    matchLabels:
+      apptype: db
+      env: dev
+  template:
+    metadata:
+      labels:
+        apptype: db
+        env: dev
+    spec:
+      volumes:
+        - name: dbvolume
+          persistentVolumeClaim:
+            claimName: devpvc
+      containers:
+        - name: dbcon
+          image: sudarshanlnx/mongo:latest
+          imagePullPolicy: Always
+          ports:
+            - name: mongo
+              containerPort: 27017
+              protocol: TCP
+          volumeMounts:
+            - name: dbvolume
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongosvc
+  namespace: devproject
+spec:
+  selector:
+    apptype: db
+    env: dev
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
+      protocol: TCP
